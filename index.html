@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHR Pro Precision Hybrid</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+         :root {
+            --mhr-glow: rgba(255, 255, 255, 0.7);
+            --mhr-glass: rgba(255, 255, 255, 0.08);
+        }
+        
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .tv-frame {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        video,
+        #ytPlayer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: 1;
+            border: none;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .active-view {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        #blackout {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.4s;
+        }
+        
+        .mhr-volume-container {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .mhr-volume-container.active {
+            opacity: 1;
+            right: 50px;
+        }
+        
+        .vol-label {
+            color: white;
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .glass-track {
+            width: 3px;
+            height: 200px;
+            background: var(--mhr-glass);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .vol-level {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            background: #fff;
+            box-shadow: 0 0 10px #fff;
+            transition: height 0.05s linear;
+        }
+        
+        #mhrBoot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.5s;
+        }
+        
+        .mhr-logo {
+            font-size: 60px;
+            font-weight: 100;
+            letter-spacing: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body oncontextmenu="return false;">
+
+    <div id="mhrBoot" onclick="launchMHR()">
+        <div class="mhr-logo">MHR</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">PRECISION SYSTEM</div>
+    </div>
+
+    <div class="tv-frame">
+        <div id="blackout"></div>
+        <div class="mhr-volume-container" id="volOSD">
+            <div class="vol-label" id="volNum">50</div>
+            <div class="glass-track">
+                <div class="vol-level" id="volFill" style="height: 50%;"></div>
+            </div>
+        </div>
+
+        <video id="mhrPlayer" playsinline></video>
+        <div id="ytPlayer"></div>
+    </div>
+
+    <script>
+        const playlist = [
+
+            {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.JALSHA.HD/index.m3u8?token=f2f2ee503f6248c12490ca5661af31b43a948eab-48d8bca985954e532c7c405ff71be59f-1772407622-1772396822&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZEE.BANGLA.HD/index.m3u8?token=b16d50b6bf392ac4e24bad11e1fe8a08338fe11d-cc6f0999421981570f0c21a2038f8573-1772408848-1772398048&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=83c8785b85e4de72de25a1eeee1443e461781ab4-4afc212afa556cac5765bea898cd3b8a-1772409592-1772398792&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/JAMUNA.TV/index.m3u8?token=630d892b63061e9fadf5f3970b99800bc9007621-57a20f668882833d12847b1e838ec456-1772409618-1772398818&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SOMOY.TV.HD/index.m3u8?token=9efe68c7cc44f0b2d0bc89551114ba16f583dd83-1b246bd7dd30b904365d188f3f36375f-1772409647-1772398847&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8"
+            }, {
+                type: "hls",
+                url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8"
+            }, {
+                type: "hls",
+                url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8"
+            }, {
+                type: "youtube",
+                name: "YouTube Live",
+                url: "xVbGmFbKc4U"
+            }, {
+                type: "youtube",
+                name: "YouTube Live",
+                url: "7P6pqY6bTDw"
+            }, {
+                type: "youtube",
+                name: "YouTube Live",
+                url: "VXP-ubxhinA"
+            }, {
+                type: "youtube",
+                name: "YouTube Live",
+                url: "RZphrATTkz8"
+            }, {
+                type: "hls",
+                url: "https://deshitv.deshitv24.net/live/myStream/playlist.m3u8"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/CHANNEL.24.HD/index.m3u8?token=59ac95a050997270881c515a3eb428826c571adf-f31d6fe9a899dbc4e64ec59f56f73a94-1772399019-1772388219&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ATN.BANGLA.HD/index.m3u8?token=efb61d5f9ba1bf8731310e7a3d16d942eb5b5eba-2948bd7411b8fc75c82f00fb2fe10fab-1772399044-1772388244&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ATN.NEWS.HD/index.m3u8?token=140dd77294d3b3ca25dd89e359564ed1edb0bb3b-8a8ff03ba8c8e3a9202e12b2fed54ca3-1772399062-1772388262&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/CHANNEL.I.HD/index.m3u8?token=febf5234f023c5aa20d3cd1de6b77fa9af59f3b0-178dcd7b750e7e53b0f343708a253f11-1772399092-1772388292&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/INDEPENDENT.TV/index.m3u8?token=5a8a1cd6c95a94990e6858a801fa2ca5230862b3-157487a0fb7e57ece763e36f97e61e88-1772399187-1772388387&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/MASRANGA.TV.HD/index.m3u8?token=e6c8163b5d2f9cefb505183e947e33ac8e88ffdf-40adbef738843e47dc847a20c9320a3c-1772399225-1772388425&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/NAGORIK.TV.HD/index.m3u8?token=b69ca485558d21687cccb6b16e190fea9693af8e-eef213a4cf537af5690288c56d874143-1772399242-1772388442&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/JALSHA.MOVIES.HD/index.m3u8?token=cae938f569830a705f0f44aa2dae22ef271b4aeb-970828f65f4d77235e7c6657dbf6b9b2-1772399583-1772388783&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/COLORS.BANGLA.HD/index.m3u8?token=df711b6a1b857cfa695748e107fc717dc9b62c05-eae4be54760c7f86f7d224257d546127-1772399744-1772388944&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/COLORS.BANGLA.CINEMA/index.m3u8?token=97fa203f21a1a8cf10115f872fc57f341b210cdc-f0e487fce52e5ff31ec87cb7a5fd694a-1772399687-1772388887&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZEE.BANGLA.CINEMA/index.m3u8?token=bd4fab9df38f13e06ca06259c8f2f1cb78ee5f2d-0c0f832347733f0fe15282e34b269b35-1772399830-1772389030&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SUN.BANGLA.HD/index.m3u8?token=c18aa0460489d365225ed09c92482ae0a201d47a-8471d061201822d2b7e9914a4ce37d91-1772399858-1772389058&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ENTER10.BANGLA/index.m3u8?token=af669c6c0299f8c8d7e2b05f798abf12c748f904-f5533e540b3efe91afdbe3a624a598b6-1772399908-1772389108&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.PLUS.HD/index.m3u8?token=78792c4801661fe7e0727b01b8747358dd0cfe52-570d9a6cc67bc493fa7d198674010713-1772400063-1772389263&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.GOLD.HD/index.m3u8?token=60d670f11df68dbade106942090036ece53017cf-7abdd86292eaaaf16f8d2eaa40812099-1772400109-1772389309&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.GOLD.SEL.HD/index.m3u8?token=b6ea9832c81d09ff812030ad6e1ae0b97fccbaa3-c3ebd7ca6999d2a93413556903b0b853-1772400161-1772389361&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.BHARAT.HD/index.m3u8?token=2b36d0c2e22ccda52a63fea3b83097b6abe40faf-667bf62c6984385aa91d4fbc348d1469-1772400195-1772389395&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.MAX.HD/index.m3u8?token=812af52c5c71634d9c44bfbace715c0986ce8dc4-49fef0b4bf210d26daff1f510ac0c8e7-1772400233-1772389433&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZEE.CINEMA.HD/index.m3u8?token=c7e733c28ec13fa8223f6d5377327633f0374423-12fd034dbb25b69cea2bdcc0d124c953-1772400263-1772389463&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZEE.TV.HD/index.m3u8?token=aa86d9b28d5dad0322295035227a45e5e3bd997a-485c9ac030291872f5621fe2e7251de7-1772400290-1772389490&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.ENT.HD/index.m3u8?token=a76aaca237facbb2e61a45a3daddca67026bfbcc-50f4e7b904048d9201e8caf5d2c398cc-1772400317-1772389517&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZING.MUSIC/index.m3u8?token=d34f3bb209f426bbddf3faddad3d2a6f813bcec3-1321acb3fe5de9f6542ca95a7787d850-1772400347-1772389547&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZOOM.MUSIC/index.m3u8?token=5bf1b9926770e73b1a62896add7602d92f38da11-96b192b0f4645a7f87f70687d72cde42-1772400377-1772389577&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/HUM.MASALA.TV/index.m3u8?token=b0bcb0c2c59fa9321f28f54454066ea397467977-f37e67979f232a28039117306d5ffce8-1772400403-1772389603&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/COLORS.HD/index.m3u8?token=c22d6df770bae4595a6720ae4947723fad6a0afc-ea42257893c7acf2a6b950ce8abf5e74-1772400446-1772389646&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/COLORS.CINEPLEX.HD/index.m3u8?token=22eb7cfba8926d7e70f80db855e6e96449d247d4-368f3742e35bd564869b5b4b605bc1ef-1772400465-1772389665&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ANT.PICTURS.HD/index.m3u8?token=c9e28be6ad27ccceb85f07cfd0323f960960d128-b3ac593039dacbf0f1ab171252e614f5-1772400488-1772389688&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ZEE.CAFE.HD/index.m3u8?token=db956b3c4e5c9f96821b53ac9eb6cce18e7b8726-6546aa10e38af81ccf63f0e7ffe5a5ed-1772401918-1772391118&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/TRAVELXP.HD/index.m3u8?token=bf5261c2d0ab3a5f1b2754a774c1cfc60275380a-f099b1fa8c24ac5075941acecb56e0cb-1772401963-1772391163&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/TLC.HD/index.m3u8?token=b4de858444fd559c296d2e2445733bcfd261db48-b80ed73968f5fe89025644a471f834cd-1772401987-1772391187&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.MOVIES.SEL.HD/index.m3u8?token=df815c24e59787b855c647fc5cd0fccda8000a92-648691f578c41a5f1ba651345797bbf2-1772402013-1772391213&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.MOVIES.HD/index.m3u8?token=e79d4eab84ee6d2355cd0f8254c0c8767624dbe6-86180c069e1ba87f482e53dd7a4c9a63-1772402041-1772391241&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.BBC.EARTH.HD/index.m3u8?token=d12f079fbb8e2d82bddbdf97337b707fb4933534-a97d75266648ae191be53f0dedb74552-1772402061-1772391261&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ROMEDY.NOW/index.m3u8?token=fdb79cdeaae94ecf6d1888e877f09ffbd80a263d-005bbd068beff17486875d8588876acf-1772402085-1772391285&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/NATGEO.WILD.HD/index.m3u8?token=5141fd83c562d158cb3f9c2f730ef4769b218788-6cd3329cdccbae32230d227b3929b075-1772402109-1772391309&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/NATGEO.HD/index.m3u8?token=0b677b6316d12f610d59e2fa9bdc49ab0ca7581c-d81521bf525eb5ff1bdaeb094f484e97-1772402129-1772391329&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/MOVIES.NOW.HD/index.m3u8?token=18729ab05937406dec071259c4fd55123ba9972e-905670466e2a5bf9618c10dbe6adcaf6-1772402159-1772391359&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/MNX.HD/index.m3u8?token=7c29d957a24e98e03c49a525129e3a8a96c643ca-1f9f824a3ca720d0de662adbf877c446-1772402179-1772391379&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/MN.PLUS.HD/index.m3u8?token=425521b43c9836c7888aeb56346dffee1583fa8b-c6cc89d5dc48b33ca410baf711f01369-1772402203-1772391403&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/Lotus.TV.HD/index.m3u8?token=6b01135ace927ada17ad84763a3c655e2d9bf230-a1ac3aa348f5fe02c9b896d7a9e5e4df-1772402233-1772391433&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/HISTORY.TV.18.HD/index.m3u8?token=a2a1ba98044022bc17fdc1676a2a33bfff68d4ef-5aa9bb8cb4476690a13d5706e328b197-1772402260-1772391460&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/BBC.Earth.HD/index.m3u8?token=e649faa0d913d724741e25d65f02142593ef93e1-c6044684204cd1744cb67de8f5a60019-1772402308-1772391508&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/AXN.HD/index.m3u8?token=13c4be6605b7596eed8a02251e9c437dcb1406f1-8fc1dd3cc7b9a8b591364f6896c297a9-1772402329-1772391529&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ANIMAL.PLANET.HD/index.m3u8?token=65a1f87ae3c28b75d59f37673a501a3c7f687fca-b3ac5795e383d263a772c3e297aa8598-1772402351-1772391551&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/XPLOR.HD/index.m3u8?token=962dd13d813b7cdd4c15ca5653aaaf9fc81eb0ab-1abbf069f35de8e691ced8bcecf7176e-1772402369-1772391569&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/AND.PRIVE.HD/index.m3u8?token=0cade3d1f795a16f9eb8e4f5935a63ee376fbdfb-4ca15be01a41b5fce5b06bd2433f26b7-1772402391-1772391591&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/AND.FLIX.HD/index.m3u8?token=4bfcb2a986956c3e3609eebde4076d7242894c69-f17386c3919c3605091b1b975d9a9ca6-1772402409-1772391609&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ALJAZEERA.HD/index.m3u8?token=247c0928b53c1e455d0bf06a47e9c63bff2d62fc-54939acab7bc9eb8e2454b8246ca8363-1772402432-1772391632&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/MADANI.TV.HD/index.m3u8?token=9a3791b155bef98b131994353dc4ad1dbcf6bae1-82524b90f030ca0fd76f35034c552518-1772402467-1772391667&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/PEACE.TV.BANGLA.HD/index.m3u8?token=f53593ebfc846b58e0bbed5dc8b3edb51098e220-d666bc6c12ee8efa4f07989f5321a444-1772402488-1772391688&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/A.SPORTS.HD/index.m3u8?token=1930c213b5ee5de15e5e7a92ddb34dc8f661689f-f35adcf3f8eaf29fdab7d6d6067bffa7-1772402506-1772391706&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/EUROSPORTS.HD/index.m3u8?token=75c3cd2a184ce21c5b3ef6d969df0fca67fe94eb-946495c2898421a2ade3e816aee2ad25-1772402527-1772391727&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/FAST.SPORTS.HD/index.m3u8?token=60bf34c7f2a5525abb554382409f164087b27a9e-6d4304bc66ec4af505555ef3d67e8701-1772402545-1772391745&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.SPORTS2.HD/index.m3u8?token=9a0afc24916205e3adeb1b50225db75df21007a0-1de081e2514ed35c58d0f8cd99c960f3-1772402702-1772391902&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.SPORTS.3/index.m3u8?token=5663d917101c70f848b081bea6eaffc7cec42a17-03e84577a7ea6aecb3d41de75ec706ea-1772402723-1772391923&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.SPORTS.4/index.m3u8?token=bf6e5f895f39fa146d3facff23600a4c95a2bfb2-e74c59c514ea8b83b5b19d696acbff0d-1772402744-1772391944&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.SPORTS-SEL1.HD/index.m3u8?token=24718b0d79e2ce809500d9ae98df5207ab0f0585-d9ff04edb04ab1614dbe500ea86c366b-1772402788-1772391988&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.SPORTS1.HD/index.m3u8?token=5ad826eaa83ebb97c42eaded56e038002209451e-4d6388f074d96151afd233df7a76e6a6-1772402811-1772392011&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.SPORTS2.HD/index.m3u8?token=222e9dac9dae97b3ec0928883429fdaf0a736868-61589e3b110f05e6b4b963404a0e2ae5-1772402832-1772392032&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR-SPORTS.3/index.m3u8?token=45e81980a1f9ed9876606a377c3035889ae3956d-f235713a9a4a43d0a4530ae178fcd4dd-1772402859-1772392059&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/STAR.SPORTS.SEL.2.HD/index.m3u8?token=95a876ec6bc0347585bc0060af354d97fdc35e40-b6b580a5abeb2d12eca45f8ce1910eec-1772402877-1772392077&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/ETV.BAL.BHARAT/index.m3u8?token=6c53b3c6473203256ff7ee39914fe41dacbff38e-ad62e43502b88a7080f8466331d6b86e-1772402901-1772392101&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/HUNGAMA/index.m3u8?token=b2a406ea1b4cd4a8920282564d04b6fd641a919d-d8a3d4bef8f7516aecb30f3715d59f07-1772402962-1772392162&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/NICK/index.m3u8?token=1125929ee387b209f5c43c3cfac4c2a21e834962-f481f00329e10d69d729d19ebe5827ce-1772402985-1772392185&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/NICK.JR/index.m3u8?token=25b349858f15bd3832183b878529a5c47260cbb3-a347e98a30b616e769096cfa0de174a1-1772403003-1772392203&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/POGO/index.m3u8?token=05e397b476b55726c70d22138ebc4445226fa858-3e4f41c62f33e405f8affe81fa5df74b-1772403038-1772392238&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONIC/index.m3u8?token=11646c9ab7ff1fb3dc04eca501f35e2e854224eb-337def2549a13428f6261f31ad64f81f-1772403057-1772392257&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SONY.YAY/index.m3u8?token=a8f64ff3b262da7ea3246d9804f6fce651328172-7808131bf371c81253abc9a438cbe28e-1772403075-1772392275&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/SUPER.HUNGAMA/index.m3u8?token=010106311938d824d1feadc3ebf6d392bc11eecd-01c976e55ccdb21d56aa239cad2a1452-1772403095-1772392295&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "https://cloudfrontnet.vercel.app/tplay/playout/209611/master.m3u8"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/DURANTA.TV.HD/index.m3u8?token=1b63b00deff68e69eae6c3957639e6b189bee6a3-b893fcfe13313a0c8f2bee4cc53183ba-1772402942-1772392142&remote=no_check_ip"
+            }, {
+                type: "hls",
+                url: "http://103.144.89.251:8082/CARTON.NETWORK.HD/index.m3u8?token=5acd7d8c872b205945e1cb8643f0bfac292d7b02-4564c99c4bc900a9a6c23cec39bc1ed7-1772402921-1772392121&remote=no_check_ip"
+            }
+        ];
+
+
+        let currentIndex = 0;
+        let currentVol = 50;
+        let ytPlayer;
+        let hls = new Hls();
+        let osdTimer;
+
+        const video = document.getElementById('mhrPlayer');
+        const blackout = document.getElementById('blackout');
+
+        // YouTube API Initialization
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('ytPlayer', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': (e) => e.target.setVolume(currentVol)
+                }
+            });
+        }
+
+        function launchMHR() {
+            document.documentElement.requestFullscreen().catch(() => {});
+            document.getElementById('mhrBoot').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('mhrBoot').style.display = 'none';
+                tune(0);
+            }, 500);
+        }
+
+        function tune(i) {
+            blackout.style.opacity = "1";
+            const channel = playlist[i];
+            const ytElement = document.getElementById('ytPlayer');
+
+            // Reset UI and Players
+            video.classList.remove('active-view');
+            ytElement.classList.remove('active-view');
+            video.pause();
+            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+
+            if (channel.type === "youtube") {
+                ytElement.classList.add('active-view');
+                if (ytPlayer && ytPlayer.loadVideoById) {
+                    ytPlayer.loadVideoById(channel.url);
+                    ytPlayer.setVolume(currentVol);
+                    ytPlayer.playVideo();
+                }
+                setTimeout(() => blackout.style.opacity = "0", 1500);
+            } else {
+                video.classList.add('active-view');
+                if (Hls.isSupported()) {
+                    hls.destroy();
+                    hls = new Hls();
+                    hls.loadSource(channel.url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        video.play();
+                        video.volume = currentVol / 100;
+                    });
+                    hls.on(Hls.Events.ERROR, (event, data) => {
+                        if (data.fatal) {
+                            console.error("Stream failed. Likely expired token.");
+                            document.getElementById('volNum').innerText = "OFF AIR";
+                        }
+                    });
+                    video.onplaying = () => blackout.style.opacity = "0";
+                }
+            }
+        }
+
+        function handleVolume(delta) {
+            currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
+
+            // Apply to HLS video element
+            video.volume = currentVol / 100;
+
+            // Apply to YouTube API
+            if (ytPlayer && ytPlayer.setVolume) {
+                ytPlayer.setVolume(currentVol);
+            }
+
+            // OSD Update
+            document.getElementById('volNum').innerText = currentVol;
+            document.getElementById('volFill').style.height = currentVol + "%";
+            const osd = document.getElementById('volOSD');
+            osd.classList.add('active');
+            clearTimeout(osdTimer);
+            osdTimer = setTimeout(() => osd.classList.remove('active'), 1200);
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight") {
+                currentIndex = (currentIndex + 1) % playlist.length;
+                tune(currentIndex);
+            } else if (e.key === "ArrowLeft") {
+                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+                tune(currentIndex);
+            } else if (e.key === "ArrowUp") {
+                handleVolume(5);
+                e.preventDefault();
+            } else if (e.key === "ArrowDown") {
+                handleVolume(-5);
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>
