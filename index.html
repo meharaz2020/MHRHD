@@ -1,149 +1,355 @@
-<script>
-    const playlist = [
-        { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8" },
-        { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8" },
-        { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8" },
-        { type: "youtube", name: "YouTube Live", url: "xVbGmFbKc4U" },
-        { type: "youtube", name: "YouTube Live", url: "7P6pqY6bTDw" },
-        { type: "youtube", name: "YouTube Live", url: "VXP-ubxhinA" },
-        { type: "youtube", name: "YouTube Live", url: "RZphrATTkz8" },
-        { type: "hls", url: "https://deshitv.deshitv24.net/live/myStream/playlist.m3u8" }
-    ];
+<!DOCTYPE html>
+<html lang="en">
 
-    let currentIndex = 0;
-    let currentVol = 50;
-    let ytPlayer;
-    let hls = new Hls();
-    let osdTimer;
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    const video = document.getElementById('mhrPlayer');
-    const blackout = document.getElementById('blackout');
-
-    // YouTube API Initialization
-    function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('ytPlayer', {
-            height: '100%',
-            width: '100%',
-            playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0 },
-            events: { 'onReady': (e) => e.target.setVolume(currentVol) }
-        });
-    }
-
-    function launchMHR() {
-        document.documentElement.requestFullscreen().catch(() => {});
-        document.getElementById('mhrBoot').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('mhrBoot').style.display = 'none';
-            tune(0);
-        }, 500);
-    }
-
-    function tune(i) {
-        blackout.style.opacity = "1";
-        const channel = playlist[i];
-        const ytElement = document.getElementById('ytPlayer');
-
-        video.classList.remove('active-view');
-        ytElement.classList.remove('active-view');
-        video.pause();
-        if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-
-        if (channel.type === "youtube") {
-            ytElement.classList.add('active-view');
-            if (ytPlayer && ytPlayer.loadVideoById) {
-                ytPlayer.loadVideoById(channel.url);
-                ytPlayer.setVolume(currentVol);
-                ytPlayer.playVideo();
-            }
-            setTimeout(() => blackout.style.opacity = "0", 1500);
-        } else {
-            video.classList.add('active-view');
-            if (Hls.isSupported()) {
-                hls.destroy();
-                hls = new Hls();
-                hls.loadSource(channel.url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play();
-                    video.volume = currentVol / 100;
-                });
-                video.onplaying = () => blackout.style.opacity = "0";
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHR Pro Precision Hybrid</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+         :root {
+            --mhr-glow: rgba(255, 255, 255, 0.7);
+            --mhr-glass: rgba(255, 255, 255, 0.08);
         }
-    }
-
-    function handleVolume(delta) {
-        currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
-        video.volume = currentVol / 100;
-        if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(currentVol);
-
-        document.getElementById('volNum').innerText = currentVol;
-        document.getElementById('volFill').style.height = currentVol + "%";
-        const osd = document.getElementById('volOSD');
-        osd.classList.add('active');
-        clearTimeout(osdTimer);
-        osdTimer = setTimeout(() => osd.classList.remove('active'), 1200);
-    }
-
-    // --- Unified Navigation (Remote + Keyboard) ---
-    document.addEventListener("keydown", (e) => {
-        switch(e.keyCode || e.which) {
-            case 37: // Left Arrow / TV Left
-                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-                tune(currentIndex);
-                break;
-            case 39: // Right Arrow / TV Right
-                currentIndex = (currentIndex + 1) % playlist.length;
-                tune(currentIndex);
-                break;
-            case 38: // Up Arrow / TV Up
-                handleVolume(5);
-                e.preventDefault();
-                break;
-            case 40: // Down Arrow / TV Down
-                handleVolume(-5);
-                e.preventDefault();
-                break;
-            case 13: // Enter / OK
-                if(document.getElementById('mhrBoot').style.display !== 'none') launchMHR();
-                break;
-        }
-    });
-
-    // --- Mobile Swipe Navigation ---
-    document.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-    }, {passive: false});
-
-    document.addEventListener('touchend', e => {
-        const touchEndX = e.changedTouches[0].screenX;
-        const touchEndY = e.changedTouches[0].screenY;
         
-        const diffX = touchEndX - touchStartX;
-        const diffY = touchEndY - touchStartY;
-        const threshold = 60;
-
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            if (Math.abs(diffX) > threshold) {
-                // Horizontal Swipe: Channel Change
-                if (diffX > 0) currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-                else currentIndex = (currentIndex + 1) % playlist.length;
-                tune(currentIndex);
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .tv-frame {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        video,
+        #ytPlayer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: 1;
+            border: none;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .active-view {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        #blackout {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.4s;
+        }
+        
+        .mhr-volume-container {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .mhr-volume-container.active {
+            opacity: 1;
+            right: 50px;
+        }
+        
+        .vol-label {
+            color: white;
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .glass-track {
+            width: 3px;
+            height: 200px;
+            background: var(--mhr-glass);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .vol-level {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            background: #fff;
+            box-shadow: 0 0 10px #fff;
+            transition: height 0.05s linear;
+        }
+        
+        #mhrBoot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.5s;
+        }
+        
+        .mhr-logo {
+            font-size: 60px;
+            font-weight: 100;
+            letter-spacing: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.2;
             }
-        } else {
-            if (Math.abs(diffY) > threshold) {
-                // Vertical Swipe: Volume Control
-                if (diffY < 0) handleVolume(10); // Swipe Up
-                else handleVolume(-10); // Swipe Down
+            50% {
+                opacity: 1;
             }
         }
-    }, {passive: false});
+    </style>
+</head>
 
-    // Prevent default touch behaviors (like refresh)
-    document.addEventListener('touchmove', e => {
-        if (e.touches.length > 1) e.preventDefault();
-    }, {passive: false});
-</script>
+<body oncontextmenu="return false;">
+
+    <div id="mhrBoot" onclick="launchMHR()">
+        <div class="mhr-logo">MHR</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">PRECISION SYSTEM</div>
+    </div>
+
+    <div class="tv-frame">
+        <div id="blackout"></div>
+        <div class="mhr-volume-container" id="volOSD">
+            <div class="vol-label" id="volNum">50</div>
+            <div class="glass-track">
+                <div class="vol-level" id="volFill" style="height: 50%;"></div>
+            </div>
+        </div>
+
+        <video id="mhrPlayer" playsinline></video>
+        <div id="ytPlayer"></div>
+    </div>
+
+    <script>
+        const playlist = [{
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8"
+        }, {
+            type: "youtube",
+            name: "YouTube Live",
+            url: "xVbGmFbKc4U"
+        }, {
+            type: "youtube",
+            name: "YouTube Live",
+            url: "7P6pqY6bTDw"
+        }, {
+            type: "youtube",
+            name: "YouTube Live",
+            url: "VXP-ubxhinA"
+        }, {
+            type: "youtube",
+            name: "YouTube Live",
+            url: "RZphrATTkz8"
+        }, {
+            type: "hls",
+            url: "https://deshitv.deshitv24.net/live/myStream/playlist.m3u8"
+        }];
+
+        let currentIndex = 0;
+        let currentVol = 50;
+        let ytPlayer;
+        let hls = new Hls();
+        let osdTimer;
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        const video = document.getElementById('mhrPlayer');
+        const blackout = document.getElementById('blackout');
+
+        // YouTube API Initialization
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('ytPlayer', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': (e) => e.target.setVolume(currentVol)
+                }
+            });
+        }
+
+        function launchMHR() {
+            document.documentElement.requestFullscreen().catch(() => {});
+            document.getElementById('mhrBoot').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('mhrBoot').style.display = 'none';
+                tune(0);
+            }, 500);
+        }
+
+        function tune(i) {
+            blackout.style.opacity = "1";
+            const channel = playlist[i];
+            const ytElement = document.getElementById('ytPlayer');
+
+            video.classList.remove('active-view');
+            ytElement.classList.remove('active-view');
+            video.pause();
+            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+
+            if (channel.type === "youtube") {
+                ytElement.classList.add('active-view');
+                if (ytPlayer && ytPlayer.loadVideoById) {
+                    ytPlayer.loadVideoById(channel.url);
+                    ytPlayer.setVolume(currentVol);
+                    ytPlayer.playVideo();
+                }
+                setTimeout(() => blackout.style.opacity = "0", 1500);
+            } else {
+                video.classList.add('active-view');
+                if (Hls.isSupported()) {
+                    hls.destroy();
+                    hls = new Hls();
+                    hls.loadSource(channel.url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        video.play();
+                        video.volume = currentVol / 100;
+                    });
+                    video.onplaying = () => blackout.style.opacity = "0";
+                }
+            }
+        }
+
+        function handleVolume(delta) {
+            currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
+            video.volume = currentVol / 100;
+            if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(currentVol);
+
+            document.getElementById('volNum').innerText = currentVol;
+            document.getElementById('volFill').style.height = currentVol + "%";
+            const osd = document.getElementById('volOSD');
+            osd.classList.add('active');
+            clearTimeout(osdTimer);
+            osdTimer = setTimeout(() => osd.classList.remove('active'), 1200);
+        }
+
+        // --- Unified Navigation (Remote + Keyboard) ---
+        document.addEventListener("keydown", (e) => {
+            switch (e.keyCode || e.which) {
+                case 37: // Left Arrow / TV Left
+                    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+                    tune(currentIndex);
+                    break;
+                case 39: // Right Arrow / TV Right
+                    currentIndex = (currentIndex + 1) % playlist.length;
+                    tune(currentIndex);
+                    break;
+                case 38: // Up Arrow / TV Up
+                    handleVolume(5);
+                    e.preventDefault();
+                    break;
+                case 40: // Down Arrow / TV Down
+                    handleVolume(-5);
+                    e.preventDefault();
+                    break;
+                case 13: // Enter / OK
+                    if (document.getElementById('mhrBoot').style.display !== 'none') launchMHR();
+                    break;
+            }
+        });
+
+        // --- Mobile Swipe Navigation ---
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, {
+            passive: false
+        });
+
+        document.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            const threshold = 60;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > threshold) {
+                    // Horizontal Swipe: Channel Change
+                    if (diffX > 0) currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+                    else currentIndex = (currentIndex + 1) % playlist.length;
+                    tune(currentIndex);
+                }
+            } else {
+                if (Math.abs(diffY) > threshold) {
+                    // Vertical Swipe: Volume Control
+                    if (diffY < 0) handleVolume(10); // Swipe Up
+                    else handleVolume(-10); // Swipe Down
+                }
+            }
+        }, {
+            passive: false
+        });
+
+        // Prevent default touch behaviors (like refresh)
+        document.addEventListener('touchmove', e => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, {
+            passive: false
+        });
+    </script>
+</body>
+
+</html>
