@@ -8,10 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-         :root {
+        :root {
             --mhr-glass: rgba(255, 255, 255, 0.08);
         }
-        
+
         body,
         html {
             margin: 0;
@@ -25,15 +25,14 @@
             -webkit-user-select: none;
             touch-action: none;
         }
-        
+
         .tv-frame {
             position: relative;
             width: 100vw;
             height: 100vh;
             background: #000;
         }
-        /* Players */
-        
+
         video,
         #ytPlayer {
             position: absolute;
@@ -45,14 +44,14 @@
             opacity: 0;
             transition: opacity 0.5s;
             border: none;
+            pointer-events: none; /* Allows swipe detection over the player */
         }
-        
+
         .active-view {
             display: block !important;
             opacity: 1 !important;
         }
-        /* UI Elements */
-        
+
         #blackout {
             position: absolute;
             top: 0;
@@ -65,7 +64,7 @@
             opacity: 1;
             transition: 0.4s;
         }
-        
+
         #mhrBoot {
             position: fixed;
             top: 0;
@@ -81,25 +80,19 @@
             align-items: center;
             cursor: pointer;
         }
-        
+
         .mhr-logo {
             font-size: 60px;
             font-weight: 100;
             letter-spacing: 15px;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
-            0%,
-            100% {
-                opacity: 0.2;
-            }
-            50% {
-                opacity: 1;
-            }
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
         }
-        /* Volume OSD */
-        
+
         .mhr-volume-container {
             position: absolute;
             right: 40px;
@@ -113,17 +106,17 @@
             opacity: 0;
             transition: 0.3s;
         }
-        
+
         .mhr-volume-container.active {
             opacity: 1;
             right: 50px;
         }
-        
+
         .vol-label {
             color: white;
             font-size: 18px;
         }
-        
+
         .glass-track {
             width: 3px;
             height: 200px;
@@ -132,7 +125,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .vol-level {
             width: 100%;
             position: absolute;
@@ -148,10 +141,10 @@
 
     <div id="mhrBoot" onclick="launchMHR()">
         <div class="mhr-logo">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">SYSTEM START</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">TAP TO START</div>
     </div>
 
-    <div class="tv-frame">
+    <div class="tv-frame" id="touchZone">
         <div id="blackout"></div>
 
         <div class="mhr-volume-container" id="volOSD">
@@ -166,95 +159,39 @@
     </div>
 
     <script>
-        const playlist = [{
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8"
-        }, {
-            type: "hls",
-            url: "https://tvsen4.aynaott.com/durontotv/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8"
-        }, {
-            type: "hls",
-            url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ"
-        }, {
-            type: "hls",
-            url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8"
-        }, {
-            type: "hls",
-            url: ""
-        }, {
-            type: "hls",
-            url: ""
-        }, {
-            type: "hls",
-            url: ""
-        }, {
-            type: "hls",
-            url: ""
-        }];
+        const playlist = [
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8" },
+            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8" },
+            { type: "hls", url: "https://tvsen4.aynaott.com/durontotv/index.m3u8" },
+            { type: "hls", url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8" },
+            { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ" }
+        ];
 
-        let currentIndex = 0,
-            currentVol = 50,
-            ytPlayer, hls = null,
-            osdTimer;
+        let currentIndex = 0, currentVol = 50, ytPlayer, hls = null, osdTimer;
         let isYtReady = false;
+        
+        // Touch tracking variables
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         const video = document.getElementById('mhrPlayer');
         const blackout = document.getElementById('blackout');
 
         function onYouTubeIframeAPIReady() {
             ytPlayer = new YT.Player('ytPlayer', {
-                height: '100%',
-                width: '100%',
-                playerVars: {
-                    'autoplay': 1,
-                    'controls': 0,
-                    'modestbranding': 1,
-                    'rel': 0,
-                    'showinfo': 0,
-                    'iv_load_policy': 3,
-                    'origin': window.location.origin // CRITICAL FIX
-                },
-                events: {
-                    'onReady': () => {
-                        isYtReady = true;
-                    }
-                }
+                height: '100%', width: '100%',
+                playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0, 'origin': window.location.origin },
+                events: { 'onReady': () => { isYtReady = true; } }
             });
         }
 
@@ -267,37 +204,27 @@
         function tune(i) {
             blackout.style.opacity = "1";
             const ch = playlist[i];
-
-            // Reset UI and stop current playback
             video.classList.remove('active-view');
             document.getElementById('ytPlayer').classList.remove('active-view');
             video.pause();
-
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
+            if (hls) { hls.destroy(); hls = null; }
             if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
 
-            // Handle Channel Type
             if (ch.type === "youtube") {
                 document.getElementById('ytPlayer').classList.add('active-view');
                 if (isYtReady) {
                     ytPlayer.loadVideoById(ch.url);
                     ytPlayer.setVolume(currentVol);
-                    // Fade out blackout after YouTube begins loading
                     setTimeout(() => blackout.style.opacity = "0", 1500);
                 }
             } else {
                 video.classList.add('active-view');
                 if (Hls.isSupported()) {
-                    hls = new Hls({
-                        xhrSetup: xhr => xhr.withCredentials = false
-                    });
+                    hls = new Hls({ xhrSetup: xhr => xhr.withCredentials = false });
                     hls.loadSource(ch.url);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        video.play().catch(() => console.log("User interaction required"));
+                        video.play().catch(() => {});
                         video.volume = currentVol / 100;
                     });
                     video.onplaying = () => blackout.style.opacity = "0";
@@ -309,33 +236,45 @@
             currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
             video.volume = currentVol / 100;
             if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(currentVol);
-
             document.getElementById('volNum').innerText = currentVol;
             document.getElementById('volFill').style.height = currentVol + "%";
             document.getElementById('volOSD').classList.add('active');
-
             clearTimeout(osdTimer);
             osdTimer = setTimeout(() => document.getElementById('volOSD').classList.remove('active'), 1200);
         }
 
-        // Navigation
-        document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 37) { // Left
-                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-                tune(currentIndex);
-            }
-            if (e.keyCode === 39) { // Right
+        // SWIPE LOGIC
+        const touchZone = document.getElementById('touchZone');
+        
+        touchZone.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        touchZone.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const threshold = 50; // Minimum distance to be considered a swipe
+            if (touchEndX < touchStartX - threshold) {
+                // Swipe Left -> Next Channel
                 currentIndex = (currentIndex + 1) % playlist.length;
                 tune(currentIndex);
             }
-            if (e.keyCode === 38) { // Up
-                handleVolume(5);
-                e.preventDefault();
+            if (touchEndX > touchStartX + threshold) {
+                // Swipe Right -> Previous Channel
+                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+                tune(currentIndex);
             }
-            if (e.keyCode === 40) { // Down
-                handleVolume(-5);
-                e.preventDefault();
-            }
+        }
+
+        // Keyboard Navigation
+        document.addEventListener("keydown", (e) => {
+            if (e.keyCode === 37) { currentIndex = (currentIndex - 1 + playlist.length) % playlist.length; tune(currentIndex); }
+            if (e.keyCode === 39) { currentIndex = (currentIndex + 1) % playlist.length; tune(currentIndex); }
+            if (e.keyCode === 38) { handleVolume(5); e.preventDefault(); }
+            if (e.keyCode === 40) { handleVolume(-5); e.preventDefault(); }
         });
     </script>
 </body>
