@@ -8,10 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-        :root {
+         :root {
             --mhr-glass: rgba(255, 255, 255, 0.08);
         }
-
+        
         body,
         html {
             margin: 0;
@@ -25,14 +25,14 @@
             -webkit-user-select: none;
             touch-action: none;
         }
-
+        
         .tv-frame {
             position: relative;
             width: 100vw;
             height: 100vh;
             background: #000;
         }
-
+        
         video,
         #ytPlayer {
             position: absolute;
@@ -44,14 +44,15 @@
             opacity: 0;
             transition: opacity 0.5s;
             border: none;
-            pointer-events: none; /* Allows swipe detection over the player */
+            pointer-events: none;
+            /* Allows swipe detection over the player */
         }
-
+        
         .active-view {
             display: block !important;
             opacity: 1 !important;
         }
-
+        
         #blackout {
             position: absolute;
             top: 0;
@@ -64,7 +65,7 @@
             opacity: 1;
             transition: 0.4s;
         }
-
+        
         #mhrBoot {
             position: fixed;
             top: 0;
@@ -80,19 +81,24 @@
             align-items: center;
             cursor: pointer;
         }
-
+        
         .mhr-logo {
             font-size: 60px;
             font-weight: 100;
             letter-spacing: 15px;
             animation: pulse 2s infinite;
         }
-
+        
         @keyframes pulse {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
+            0%,
+            100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
         }
-
+        
         .mhr-volume-container {
             position: absolute;
             right: 40px;
@@ -106,17 +112,17 @@
             opacity: 0;
             transition: 0.3s;
         }
-
+        
         .mhr-volume-container.active {
             opacity: 1;
             right: 50px;
         }
-
+        
         .vol-label {
             color: white;
             font-size: 18px;
         }
-
+        
         .glass-track {
             width: 3px;
             height: 200px;
@@ -125,7 +131,7 @@
             position: relative;
             overflow: hidden;
         }
-
+        
         .vol-level {
             width: 100%;
             position: absolute;
@@ -159,27 +165,62 @@
     </div>
 
     <script>
-        const playlist = [
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8" },
-            { type: "hls", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8" },
-            { type: "hls", url: "https://tvsen4.aynaott.com/durontotv/index.m3u8" },
-            { type: "hls", url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8" },
-            { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ" }
-        ];
+        const playlist = [{
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8"
+        }, {
+            type: "hls",
+            url: "https://tvsen4.aynaott.com/durontotv/index.m3u8"
+        }, {
+            type: "hls",
+            url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8"
+        }, {
+            type: "hls",
+            url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ"
+        }, {
+            type: "hls",
+            url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8"
+        }];
 
-        let currentIndex = 0, currentVol = 50, ytPlayer, hls = null, osdTimer;
+        let currentIndex = 0,
+            currentVol = 50,
+            ytPlayer, hls = null,
+            osdTimer;
         let isYtReady = false;
-        
+
         // Touch tracking variables
         let touchStartX = 0;
         let touchEndX = 0;
@@ -189,9 +230,20 @@
 
         function onYouTubeIframeAPIReady() {
             ytPlayer = new YT.Player('ytPlayer', {
-                height: '100%', width: '100%',
-                playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0, 'origin': window.location.origin },
-                events: { 'onReady': () => { isYtReady = true; } }
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'origin': window.location.origin
+                },
+                events: {
+                    'onReady': () => {
+                        isYtReady = true;
+                    }
+                }
             });
         }
 
@@ -207,7 +259,10 @@
             video.classList.remove('active-view');
             document.getElementById('ytPlayer').classList.remove('active-view');
             video.pause();
-            if (hls) { hls.destroy(); hls = null; }
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
             if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
 
             if (ch.type === "youtube") {
@@ -220,7 +275,9 @@
             } else {
                 video.classList.add('active-view');
                 if (Hls.isSupported()) {
-                    hls = new Hls({ xhrSetup: xhr => xhr.withCredentials = false });
+                    hls = new Hls({
+                        xhrSetup: xhr => xhr.withCredentials = false
+                    });
                     hls.loadSource(ch.url);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -245,7 +302,7 @@
 
         // SWIPE LOGIC
         const touchZone = document.getElementById('touchZone');
-        
+
         touchZone.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches[0].screenX;
         }, false);
@@ -271,10 +328,22 @@
 
         // Keyboard Navigation
         document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 37) { currentIndex = (currentIndex - 1 + playlist.length) % playlist.length; tune(currentIndex); }
-            if (e.keyCode === 39) { currentIndex = (currentIndex + 1) % playlist.length; tune(currentIndex); }
-            if (e.keyCode === 38) { handleVolume(5); e.preventDefault(); }
-            if (e.keyCode === 40) { handleVolume(-5); e.preventDefault(); }
+            if (e.keyCode === 37) {
+                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+                tune(currentIndex);
+            }
+            if (e.keyCode === 39) {
+                currentIndex = (currentIndex + 1) % playlist.length;
+                tune(currentIndex);
+            }
+            if (e.keyCode === 38) {
+                handleVolume(5);
+                e.preventDefault();
+            }
+            if (e.keyCode === 40) {
+                handleVolume(-5);
+                e.preventDefault();
+            }
         });
     </script>
 </body>
