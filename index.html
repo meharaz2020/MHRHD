@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MHR Pro Precision Hybrid</title>
+    <meta name="referrer" content="no-referrer">
+    <title>MHR Pro Full Screen</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
          :root {
-            --mhr-glass: rgba(255, 255, 255, 0.08);
+            --mhr-accent: #ffffff;
         }
         
         body,
@@ -22,7 +22,6 @@
             overflow: hidden;
             font-family: 'Segoe UI', sans-serif;
             user-select: none;
-            -webkit-user-select: none;
             touch-action: none;
         }
         
@@ -32,24 +31,22 @@
             height: 100vh;
             background: #000;
         }
+        /* FULL SCREEN FIX: Use 'fill' to stretch or 'cover' to crop-to-fill */
         
-        video,
-        #ytPlayer {
+        video {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: fill;
+            /* This forces the video to take the full screen */
             z-index: 1;
-            display: none;
             opacity: 0;
             transition: opacity 0.5s;
-            border: none;
-            pointer-events: none;
-            /* Allows swipe detection over the player */
         }
         
         .active-view {
-            display: block !important;
             opacity: 1 !important;
         }
         
@@ -63,7 +60,59 @@
             z-index: 5;
             pointer-events: none;
             opacity: 1;
-            transition: 0.4s;
+            transition: 0.3s;
+        }
+        /* UI Display */
+        
+        #chInfo {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            color: #fff;
+            z-index: 10;
+            opacity: 0;
+            transition: 0.3s;
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
+        }
+        
+        #chNumber {
+            font-size: 80px;
+            font-weight: 100;
+            line-height: 1;
+        }
+        
+        #chInfo.show {
+            opacity: 1;
+        }
+        /* Volume Bar */
+        
+        .vol-osd {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            z-index: 100;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        
+        .vol-osd.active {
+            opacity: 1;
+            right: 40px;
+        }
+        
+        .vol-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+            border-radius: 10px;
+            transition: height 0.1s;
         }
         
         #mhrBoot {
@@ -81,171 +130,114 @@
             align-items: center;
             cursor: pointer;
         }
-        
-        .mhr-logo {
-            font-size: 60px;
-            font-weight: 100;
-            letter-spacing: 15px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 0.2;
-            }
-            50% {
-                opacity: 1;
-            }
-        }
-        
-        .mhr-volume-container {
-            position: absolute;
-            right: 40px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            z-index: 200;
-            opacity: 0;
-            transition: 0.3s;
-        }
-        
-        .mhr-volume-container.active {
-            opacity: 1;
-            right: 50px;
-        }
-        
-        .vol-label {
-            color: white;
-            font-size: 18px;
-        }
-        
-        .glass-track {
-            width: 3px;
-            height: 200px;
-            background: var(--mhr-glass);
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .vol-level {
-            width: 100%;
-            position: absolute;
-            bottom: 0;
-            background: #fff;
-            box-shadow: 0 0 10px #fff;
-            transition: height 0.05s linear;
-        }
     </style>
 </head>
 
 <body oncontextmenu="return false;">
 
     <div id="mhrBoot" onclick="launchMHR()">
-        <div class="mhr-logo">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">TAP TO START</div>
+        <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">ENTER SYSTEM</div>
     </div>
 
     <div class="tv-frame" id="touchZone">
         <div id="blackout"></div>
 
-        <div class="mhr-volume-container" id="volOSD">
-            <div class="vol-label" id="volNum">50</div>
-            <div class="glass-track">
-                <div class="vol-level" id="volFill" style="height: 50%;"></div>
-            </div>
+        <div id="chInfo">
+            <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
+            <div id="chNumber">01</div>
         </div>
 
-        <video id="mhrPlayer" playsinline crossorigin="anonymous"></video>
-        <div id="ytPlayer"></div>
+        <div class="vol-osd" id="volBar">
+            <div class="vol-fill" id="volLevel" style="height: 50%;"></div>
+        </div>
+
+        <video id="mhrPlayer" playsinline></video>
     </div>
 
     <script>
-        const playlist = [{
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8"
-        }, {
-            type: "hls",
-            url: "https://tvsen4.aynaott.com/durontotv/index.m3u8"
-        }, {
-            type: "hls",
-            url: "https://cloudfrontnet.vercel.app/tplay/playout/209622/master.m3u8"
-        }, {
-            type: "hls",
-            url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ"
-        }, {
-            type: "hls",
-            url: "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8"
-        }];
+        const playlist = [
+
+
+
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1708/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1710/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1713/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1720/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1728/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1729/output/index.m3u8",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla/index.m3u8?token=eecb9dd1f4db1d75beacbab12ffc470557905273-f0d9fb1eedf0079aa4c03dc6333212d3-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/sony-aath/index.m3u8?token=a30ded4af3eea9c29c8ad2f17de875fc964fc80f-a04e933f6709ddf67071a8506c620377-1772643396-1772639796",
+
+            "https://iptvbd.live/metv1080/1080.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1724/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1721/output/index.m3u8",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla-cinema/index.m3u8?token=8d1d02ae937643e45977489a0dfe3e850880d60e-881b199f91a23eac78f0712253898674-1772643396-1772639796",
+
+            "https://cdn-3.pishow.tv/live/1253/master.m3u8",
+            "https://app.ncare.live/c3VydmVyX8RpbEU9Mi8xNy8yMDE0GIDU6RgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcGVMZEJCTEFWeVN3PTOmdFsaWRtaW51aiPhnPTI2/greentv.stream/live-orgin/greentv.stream/chunks.m3u8",
+            "https://streaming.madanichannel.tv/static/streaming-playlists/hls/d3e49b76-ac06-4689-a641-9200445b647f/master.m3u8",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/ananda-tv/index.m3u8?token=a6403934792cbef8c35c65344acb1c7c3b77889c-e513eb1cb3841006234f6db12cb4471b-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/global-tv/index.m3u8?token=4ce3a3dd4fc555c945fb509ceda08e8215d46866-98edd61419c9366771ec504b625a759f-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/asian-tv/index.m3u8?token=ee19598b512dad0642e7b9ae0dc174cf36a04c85-a449282ec8ccf49962d6d719e4dfe168-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-action/index.m3u8?token=3216cb416fbfe2439b3716cb9b3d047af3795ac5-ed2b40529ef4bde3c6caa403bda20628-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bollywood/index.m3u8?token=70b52c2710203916f2528af5ae9c4cef33665479-242a188ab258bea88c1685f1022e17c0-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-cinema-hd/index.m3u8?token=b3bd52201076a61016b395e12620329017f5ed5c-fd1e56aa1d98344bfa754488df6aeebe-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-tv-hd/index.m3u8?token=ab5bffb493563ab3325c7bf64a11eec6cdd9550e-0a3cf87d9da49f407a62f887695473d4-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/sony-max/index.m3u8?token=a2af55f8a82cbcb5b832db434300f250a997e567-2af7960ab8a1b6a4482ddde88da3f57d-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/sony-max-hd/index.m3u8?token=0b9da2ac3dc8013ba982175dd7c07d32795ba605-cee98defe7e12ea365da7803acf89e42-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/sony-ten-cricket/index.m3u8?token=ac7c0c3bfd1d5bd5890c0f47468fdbff890afed3-3ca1cd3ecee6985dc8b9d246bddd804d-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/euro-sport-hd/index.m3u8?token=d0156b630699ebfd827ba9a03bee88387cede492-e574f12a6667162e0cfa3b4ab0e91c2f-1772643396-1772639796",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209593/tracks-v1a1/mono.ts.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209612/tracks-v1a1/mono.ts.m3u8",
+            "https://cdn-2.pishow.tv/live/228/228_1.m3u8",
+            "https://cdn-2.pishow.tv/live/1461/master.m3u8",
+            "https://server.zillarbarta.com/ZBCINEMA/tracks-v1a1/mono.ts.m3u8",
+
+            "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01412-xiaomiasia-yrfmusic-xiaomi/playlist.m3u8",
+
+
+            "https://rtatv.akamaized.net/Content/HLS/Live/channel(RTA3)/03.m3u8",
+            "https://starsportshindiii.pages.dev/index.m3u8",
+
+
+
+
+            "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network/index.m3u8?token=cdf4516b98f215df9d99eaa6cfa8935aebedd091-6c0e27da1f7b9839536653514a3576f5-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network-hd/index.m3u8?token=b5012ab82068e2717b91d9ca6f5b8d496f786216-3e53f89a5429aff97637b8b825104219-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/pogo/index.m3u8?token=0813675d6643e7aa9b7af9b783733d3e5b4b702f-3ec020192f0e7e5de7ed41d81f7f88fc-1772643396-1772639796",
+            "https://edge2.roarzone.info:8447/roarzone/edge3/discovery-kids/index.m3u8?token=de103b0b5f52d1b4ca72f435eda69a18ce1f9d5d-3c55f3f41965a77f58f2c8c5d77426d7-1772643396-1772639796",
+            "https://live.kwikmotion.com/sharjahtvquranlive/shqurantv.smil/playlist.m3u8",
+            "https://server.zillarbarta.com/zbcatun/tracks-v1a1/mono.ts.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209902/tracks-v1a1/mono.ts.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209622/tracks-v1a1/mono.ts.m3u8",
+            "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ",
+            "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
+        ];
 
         let currentIndex = 0,
             currentVol = 50,
-            ytPlayer, hls = null,
-            osdTimer;
-        let isYtReady = false;
-
-        // Touch tracking variables
-        let touchStartX = 0;
-        let touchEndX = 0;
+            hls = null,
+            osdTimer, chTimer;
+        let touchStartX = 0,
+            touchEndX = 0;
 
         const video = document.getElementById('mhrPlayer');
         const blackout = document.getElementById('blackout');
-
-        function onYouTubeIframeAPIReady() {
-            ytPlayer = new YT.Player('ytPlayer', {
-                height: '100%',
-                width: '100%',
-                playerVars: {
-                    'autoplay': 1,
-                    'controls': 0,
-                    'modestbranding': 1,
-                    'rel': 0,
-                    'origin': window.location.origin
-                },
-                events: {
-                    'onReady': () => {
-                        isYtReady = true;
-                    }
-                }
-            });
-        }
 
         function launchMHR() {
             document.documentElement.requestFullscreen().catch(() => {});
@@ -254,94 +246,75 @@
         }
 
         function tune(i) {
+            currentIndex = i;
             blackout.style.opacity = "1";
-            const ch = playlist[i];
-            video.classList.remove('active-view');
-            document.getElementById('ytPlayer').classList.remove('active-view');
-            video.pause();
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
-            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
 
-            if (ch.type === "youtube") {
-                document.getElementById('ytPlayer').classList.add('active-view');
-                if (isYtReady) {
-                    ytPlayer.loadVideoById(ch.url);
-                    ytPlayer.setVolume(currentVol);
-                    setTimeout(() => blackout.style.opacity = "0", 1500);
-                }
-            } else {
-                video.classList.add('active-view');
-                if (Hls.isSupported()) {
-                    hls = new Hls({
-                        xhrSetup: xhr => xhr.withCredentials = false
-                    });
-                    hls.loadSource(ch.url);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        video.play().catch(() => {});
-                        video.volume = currentVol / 100;
-                    });
-                    video.onplaying = () => blackout.style.opacity = "0";
-                }
+            // Channel Display
+            document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
+            document.getElementById('chInfo').classList.add('show');
+            clearTimeout(chTimer);
+            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 3000);
+
+            if (hls) hls.destroy();
+            video.classList.remove('active-view');
+
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(playlist[currentIndex]);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    video.classList.add('active-view');
+                    blackout.style.opacity = "0";
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Support for Safari/iOS
+                video.src = playlist[currentIndex];
+                video.addEventListener('loadedmetadata', () => {
+                    video.play();
+                    video.classList.add('active-view');
+                    blackout.style.opacity = "0";
+                });
             }
         }
 
-        function handleVolume(delta) {
+        function setVolume(delta) {
             currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
             video.volume = currentVol / 100;
-            if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(currentVol);
-            document.getElementById('volNum').innerText = currentVol;
-            document.getElementById('volFill').style.height = currentVol + "%";
-            document.getElementById('volOSD').classList.add('active');
+            document.getElementById('volLevel').style.height = currentVol + "%";
+            document.getElementById('volBar').classList.add('active');
             clearTimeout(osdTimer);
-            osdTimer = setTimeout(() => document.getElementById('volOSD').classList.remove('active'), 1200);
+            osdTimer = setTimeout(() => document.getElementById('volBar').classList.remove('active'), 1500);
         }
 
-        // SWIPE LOGIC
+        // SWIPE SYSTEM
         const touchZone = document.getElementById('touchZone');
-
         touchZone.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
+        }, {
+            passive: true
+        });
         touchZone.addEventListener('touchend', e => {
             touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }, false);
-
-        function handleSwipe() {
-            const threshold = 50; // Minimum distance to be considered a swipe
-            if (touchEndX < touchStartX - threshold) {
-                // Swipe Left -> Next Channel
-                currentIndex = (currentIndex + 1) % playlist.length;
-                tune(currentIndex);
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 70) {
+                if (diff > 0) tune((currentIndex + 1) % playlist.length); // Swipe Left
+                else tune((currentIndex - 1 + playlist.length) % playlist.length); // Swipe Right
             }
-            if (touchEndX > touchStartX + threshold) {
-                // Swipe Right -> Previous Channel
-                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-                tune(currentIndex);
-            }
-        }
+        }, {
+            passive: true
+        });
 
-        // Keyboard Navigation
+        // KEYBOARD SYSTEM
         document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 37) {
-                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-                tune(currentIndex);
-            }
-            if (e.keyCode === 39) {
-                currentIndex = (currentIndex + 1) % playlist.length;
-                tune(currentIndex);
-            }
+            if (e.keyCode === 39) tune((currentIndex + 1) % playlist.length);
+            if (e.keyCode === 37) tune((currentIndex - 1 + playlist.length) % playlist.length);
             if (e.keyCode === 38) {
-                handleVolume(5);
+                setVolume(5);
                 e.preventDefault();
             }
             if (e.keyCode === 40) {
-                handleVolume(-5);
+                setVolume(-5);
                 e.preventDefault();
             }
         });
