@@ -323,7 +323,6 @@
 
 </html> -->
 
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -385,40 +384,54 @@
             opacity: 1;
             transition: 0.3s;
         }
-        /* --- NAVIGATION ARROWS --- */
+        /* --- MODERN CONTROL BAR (TOP RIGHT) --- */
         
-        .nav-zone {
+        .modern-controls {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 15%;
-            z-index: 20;
+            top: 30px;
+            /* Positioned at the top */
+            right: 30px;
+            /* Positioned at the right */
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 12px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateY(-10px);
+            /* Slight slide-in effect */
+        }
+        
+        .modern-controls.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .control-btn {
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s, background 0.3s;
+            transition: opacity 0.2s;
         }
         
-        .nav-zone:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.05);
+        .control-btn:hover {
+            opacity: 0.7;
         }
         
-        .left-zone {
-            left: 0;
+        .control-btn:active {
+            transform: scale(0.9);
         }
         
-        .right-zone {
-            right: 0;
-        }
-        
-        .arrow-icon {
-            font-size: 50px;
-            color: white;
-            font-weight: 100;
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        .icon {
+            width: 22px;
+            height: 22px;
+            fill: white;
         }
         /* UI Display */
         
@@ -442,36 +455,6 @@
         #chInfo.show {
             opacity: 1;
         }
-        /* Volume Bar */
-        
-        .vol-osd {
-            position: absolute;
-            right: 30px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 6px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            z-index: 100;
-            opacity: 0;
-            transition: 0.2s;
-        }
-        
-        .vol-osd.active {
-            opacity: 1;
-            right: 40px;
-        }
-        
-        .vol-fill {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: #fff;
-            box-shadow: 0 0 15px #fff;
-            border-radius: 10px;
-            transition: height 0.1s;
-        }
         
         #mhrBoot {
             position: fixed;
@@ -486,35 +469,39 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            cursor: pointer;
+            transition: opacity 0.8s ease;
         }
     </style>
 </head>
 
 <body oncontextmenu="return false;">
 
-    <div id="mhrBoot" onclick="launchMHR()">
+    <div id="mhrBoot">
         <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">ENTER SYSTEM</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #666; margin-top: 10px;">SYSTEM LOADING...</div>
     </div>
 
     <div class="tv-frame" id="touchZone">
         <div id="blackout"></div>
-
-        <div class="nav-zone left-zone" onclick="prevChannel()">
-            <div class="arrow-icon">‹</div>
-        </div>
-        <div class="nav-zone right-zone" onclick="nextChannel()">
-            <div class="arrow-icon">›</div>
-        </div>
 
         <div id="chInfo">
             <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
             <div id="chNumber">01</div>
         </div>
 
-        <div class="vol-osd" id="volBar">
-            <div class="vol-fill" id="volLevel" style="height: 50%;"></div>
+        <div class="modern-controls" id="controlBar">
+            <div class="control-btn" title="Previous" onclick="prevChannel()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            </div>
+            <div class="control-btn" title="Next" onclick="nextChannel()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </div>
+            <div class="control-btn" title="Refresh" onclick="location.reload()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </div>
+            <div class="control-btn" title="Full Screen" onclick="toggleFullScreen()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            </div>
         </div>
 
         <video id="mhrPlayer" playsinline></video>
@@ -522,7 +509,6 @@
 
     <script>
         const playlist = [
-
             "https://futbollive.online/T-Sports/tracks-v1a1/mono.m3u8",
             "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8",
             "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8",
@@ -594,22 +580,38 @@
         ];
 
         let currentIndex = 0,
-            currentVol = 50,
             hls = null,
-            osdTimer, chTimer;
-        let touchStartX = 0,
-            touchEndX = 0;
-
+            chTimer, uiTimer;
         const video = document.getElementById('mhrPlayer');
         const blackout = document.getElementById('blackout');
+        const controlBar = document.getElementById('controlBar');
 
-        function launchMHR() {
-            document.documentElement.requestFullscreen().catch(() => {});
-            document.getElementById('mhrBoot').style.display = 'none';
-            tune(0);
+        // AUTO-BOOT 3 SECONDS
+        window.onload = () => {
+            setTimeout(() => {
+                const boot = document.getElementById('mhrBoot');
+                boot.style.opacity = '0';
+                setTimeout(() => {
+                    boot.style.display = 'none';
+                    tune(0);
+                }, 800);
+            }, 3000);
+        };
+
+        function showUI() {
+            controlBar.classList.add('visible');
+            clearTimeout(uiTimer);
+            uiTimer = setTimeout(() => controlBar.classList.remove('visible'), 3000);
         }
 
-        // Navigation Helpers
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
         function nextChannel() {
             tune((currentIndex + 1) % playlist.length);
         }
@@ -621,6 +623,7 @@
         function tune(i) {
             currentIndex = i;
             blackout.style.opacity = "1";
+            showUI();
 
             document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
             document.getElementById('chInfo').classList.add('show');
@@ -635,60 +638,19 @@
                 hls.loadSource(playlist[currentIndex]);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play();
-                    video.classList.add('active-view');
-                    blackout.style.opacity = "0";
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = playlist[currentIndex];
-                video.addEventListener('loadedmetadata', () => {
-                    video.play();
+                    video.play().catch(() => {});
                     video.classList.add('active-view');
                     blackout.style.opacity = "0";
                 });
             }
         }
 
-        function setVolume(delta) {
-            currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
-            video.volume = currentVol / 100;
-            document.getElementById('volLevel').style.height = currentVol + "%";
-            document.getElementById('volBar').classList.add('active');
-            clearTimeout(osdTimer);
-            osdTimer = setTimeout(() => document.getElementById('volBar').classList.remove('active'), 1500);
-        }
+        document.addEventListener('mousemove', showUI);
+        document.addEventListener('touchstart', showUI);
 
-        // SWIPE SYSTEM
-        const touchZone = document.getElementById('touchZone');
-        touchZone.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, {
-            passive: true
-        });
-
-        touchZone.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            const diff = touchStartX - touchEndX;
-            if (Math.abs(diff) > 70) {
-                if (diff > 0) nextChannel();
-                else prevChannel();
-            }
-        }, {
-            passive: true
-        });
-
-        // KEYBOARD SYSTEM
         document.addEventListener("keydown", (e) => {
             if (e.keyCode === 39) nextChannel();
             if (e.keyCode === 37) prevChannel();
-            if (e.keyCode === 38) {
-                setVolume(5);
-                e.preventDefault();
-            }
-            if (e.keyCode === 40) {
-                setVolume(-5);
-                e.preventDefault();
-            }
         });
     </script>
 </body>
