@@ -365,7 +365,8 @@
             object-fit: fill;
             z-index: 1;
             opacity: 0;
-            transition: opacity 0.5s;
+            transition: opacity 0s;
+            /* Instant video appearance */
         }
         
         .active-view {
@@ -382,34 +383,34 @@
             z-index: 5;
             pointer-events: none;
             opacity: 1;
-            transition: 0.3s;
+            transition: 0s;
+            /* Instant blackout removal */
         }
-        /* --- MODERN CONTROL BAR (TOP RIGHT) --- */
+        /* --- BOTTOM MIDDLE TRANSPARENT CONTROLS --- */
         
         .modern-controls {
             position: absolute;
-            top: 30px;
-            /* Positioned at the top */
-            right: 30px;
-            /* Positioned at the right */
+            bottom: 50px;
+            /* Distance from bottom */
+            left: 50%;
+            /* Center Horizontally */
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 20px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            padding: 10px 20px;
-            border-radius: 12px;
+            gap: 40px;
+            /* Increased gap for easier touch */
+            background: transparent;
+            /* Fully transparent */
             z-index: 100;
             opacity: 0;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transform: translateY(-10px);
-            /* Slight slide-in effect */
+            transition: opacity 0s;
+            /* Instant Show/Hide */
+            pointer-events: none;
         }
         
         .modern-controls.visible {
             opacity: 1;
-            transform: translateY(0);
+            pointer-events: auto;
         }
         
         .control-btn {
@@ -417,23 +418,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.2s;
-        }
-        
-        .control-btn:hover {
-            opacity: 0.7;
+            transition: transform 0.1s;
+            /* Shadow adds visibility over white video content */
+            filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.8));
         }
         
         .control-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.8);
         }
         
         .icon {
-            width: 22px;
-            height: 22px;
+            width: 35px;
+            /* Slightly larger for bottom bar style */
+            height: 35px;
             fill: white;
         }
-        /* UI Display */
+        /* UI Display (Channel Info) */
         
         #chInfo {
             position: absolute;
@@ -442,7 +442,8 @@
             color: #fff;
             z-index: 10;
             opacity: 0;
-            transition: 0.3s;
+            transition: 0s;
+            /* Instant UI appearance */
             text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
         }
         
@@ -469,7 +470,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.8s ease;
+            transition: opacity 0.5s ease;
         }
     </style>
 </head>
@@ -493,14 +494,14 @@
             <div class="control-btn" title="Previous" onclick="prevChannel()">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
             </div>
-            <div class="control-btn" title="Next" onclick="nextChannel()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-            </div>
             <div class="control-btn" title="Refresh" onclick="location.reload()">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
             </div>
             <div class="control-btn" title="Full Screen" onclick="toggleFullScreen()">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            </div>
+            <div class="control-btn" title="Next" onclick="nextChannel()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
         </div>
 
@@ -538,7 +539,6 @@
 
             "https://cdn-3.pishow.tv/live/1253/master.m3u8",
             "https://app.ncare.live/c3VydmVyX8RpbEU9Mi8xNy8yMDE0GIDU6RgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcGVMZEJCTEFWeVN3PTOmdFsaWRtaW51aiPhnPTI2/greentv.stream/live-orgin/greentv.stream/chunks.m3u8",
-            "https://streaming.madanichannel.tv/static/streaming-playlists/hls/d3e49b76-ac06-4689-a641-9200445b647f/master.m3u8",
             "https://edge2.roarzone.info:8447/roarzone/edge3/ananda-tv/index.m3u8?token=a6403934792cbef8c35c65344acb1c7c3b77889c-e513eb1cb3841006234f6db12cb4471b-1772643396-1772639796",
             "https://edge2.roarzone.info:8447/roarzone/edge3/global-tv/index.m3u8?token=4ce3a3dd4fc555c945fb509ceda08e8215d46866-98edd61419c9366771ec504b625a759f-1772643396-1772639796",
             "https://edge2.roarzone.info:8447/roarzone/edge3/asian-tv/index.m3u8?token=ee19598b512dad0642e7b9ae0dc174cf36a04c85-a449282ec8ccf49962d6d719e4dfe168-1772643396-1772639796",
@@ -578,7 +578,6 @@
             "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8",
             "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
         ];
-
         let currentIndex = 0,
             hls = null,
             chTimer, uiTimer;
@@ -586,7 +585,6 @@
         const blackout = document.getElementById('blackout');
         const controlBar = document.getElementById('controlBar');
 
-        // AUTO-BOOT 3 SECONDS
         window.onload = () => {
             setTimeout(() => {
                 const boot = document.getElementById('mhrBoot');
@@ -594,8 +592,8 @@
                 setTimeout(() => {
                     boot.style.display = 'none';
                     tune(0);
-                }, 800);
-            }, 3000);
+                }, 500);
+            }, 2000); // Faster boot
         };
 
         function showUI() {
@@ -628,7 +626,7 @@
             document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
             document.getElementById('chInfo').classList.add('show');
             clearTimeout(chTimer);
-            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 3000);
+            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 2000);
 
             if (hls) hls.destroy();
             video.classList.remove('active-view');
