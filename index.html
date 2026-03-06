@@ -330,144 +330,205 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="referrer" content="no-referrer">
-    <title>MHR Pro Wide</title>
+    <title>MHR Pro Wide Controls</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        :root {
-            --mhr-accent: #ffffff;
-            --ui-glow: rgba(255, 255, 255, 0.3);
-        }
-        
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background: #000; overflow: hidden;
-            font-family: 'Segoe UI', sans-serif; user-select: none;
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
         }
         
         .tv-frame {
-            position: relative; width: 100vw; height: 100vh; background: #000;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
         
         video {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            object-fit: contain; z-index: 1; opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: fill;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
         
-        .active-view { opacity: 1 !important; }
-
-        /* --- LOADER SCREEN --- */
-        #videoLoader {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 6;
-            display: none;
-            flex-direction: column;
-            align-items: center;
+        .active-view {
+            opacity: 1 !important;
         }
-
+        /* CENTER SPINNER */
+        
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            display: none;
+        }
+        
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #fff;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* --- WIDER CONTROLS --- */
-        .modern-controls {
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        /* WIDE CONTROL HUB */
+        
+        .control-hub {
             position: absolute;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 20px;
-            z-index: 100;
+            gap: 12px;
+            padding: 8px;
+            background: rgba(20, 20, 20, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 300;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
-            background: rgba(0,0,0,0.4);
-            padding: 15px 30px;
-            border-radius: 50px;
-            backdrop-filter: blur(10px);
         }
         
-        .modern-controls.visible { opacity: 1; pointer-events: auto; }
+        .control-hub.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* Circular buttons for Refresh/FS */
         
-        .control-btn {
-            cursor: pointer;
+        .btn-circle {
+            width: 54px;
+            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 25px; /* Wider hit area */
-            border-radius: 12px;
-            transition: background 0.2s;
+            cursor: pointer;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            transition: 0.2s;
         }
-
-        .control-btn:hover { background: rgba(255,255,255,0.1); }
-        .control-btn:active { transform: scale(0.95); }
+        /* WIDE BUTTONS FOR NAVIGATION */
         
-        .icon-wide { width: 45px; height: 30px; fill: white; }
-        .icon-std { width: 30px; height: 30px; fill: white; }
-
+        .btn-wide {
+            width: 100px;
+            /* Extra wide for easy thumb access */
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: 0.2s;
+        }
+        
+        .btn-wide:active,
+        .btn-circle:active {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(0.92);
+        }
+        
+        .icon {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+        /* CHANNEL INFO */
+        
         #chInfo {
-            position: absolute; top: 40px; left: 40px;
-            color: #fff; z-index: 10; opacity: 0; transition: 0.3s;
-            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: #fff;
+            z-index: 10;
+            opacity: 0;
+            transition: 0.4s;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
         }
         
-        #chNumber { font-size: 80px; font-weight: 100; line-height: 1; }
-        #chInfo.show { opacity: 1; }
+        #chNumber {
+            font-size: 60px;
+            font-weight: bold;
+        }
         
-        #mhrBoot {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: white; z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        #chInfo.show {
+            opacity: 1;
+        }
+        
+        #boot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: white;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            letter-spacing: 10px;
         }
     </style>
 </head>
 
 <body oncontextmenu="return false;">
 
-    <div id="mhrBoot">
-        <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #666; margin-top: 10px;">SYSTEM READY</div>
-    </div>
+    <div id="boot">MHR</div>
 
-    <div class="tv-frame" id="touchZone">
-        <div id="videoLoader">
+    <div class="tv-frame">
+        <div id="loader">
             <div class="spinner"></div>
-            <div style="color: white; font-size: 10px; margin-top: 15px; letter-spacing: 2px;">TUNING...</div>
         </div>
 
         <div id="chInfo">
-            <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
             <div id="chNumber">01</div>
         </div>
 
-        <div class="modern-controls" id="controlBar">
-            <div class="control-btn" title="Previous" onclick="prevChannel()">
-                <svg class="icon-wide" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </div>
-            
-            <div class="control-btn" title="Refresh" onclick="location.reload()">
-                <svg class="icon-std" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <div class="control-hub" id="hub">
+            <div class="btn-wide" onclick="prev()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
             </div>
 
-            <div class="control-btn" title="Full Screen" onclick="toggleFullScreen()">
-                <svg class="icon-std" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <div class="btn-wide" onclick="next()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
 
-            <div class="control-btn" title="Next" onclick="nextChannel()">
-                <svg class="icon-wide" viewBox="0 0 24 24"><path d="M4 11h12.17l-5.58-5.59L12 4l8 8-8 8-1.41-1.41L16.17 13H4v-2z"/></svg>
+            <div class="btn-circle" onclick="location.reload()">
+                <svg class="icon" viewBox="0 0 24 24" style="width:24px;"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
             </div>
+
+            <div class="btn-circle" onclick="toggleFS()">
+                <svg class="icon" viewBox="0 0 24 24" style="width:24px;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            </div>
+
         </div>
 
-        <video id="mhrPlayer" playsinline></video>
+        <video id="player" playsinline></video>
     </div>
 
     <script>
@@ -493,10 +554,12 @@
             "https://owrcovcrpy.gpcdn.net/bpk-tv/1729/output/index.m3u8",
             "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla/index.m3u8?token=eecb9dd1f4db1d75beacbab12ffc470557905273-f0d9fb1eedf0079aa4c03dc6333212d3-1772643396-1772639796",
             "https://edge2.roarzone.info:8447/roarzone/edge3/sony-aath/index.m3u8?token=a30ded4af3eea9c29c8ad2f17de875fc964fc80f-a04e933f6709ddf67071a8506c620377-1772643396-1772639796",
+
             "https://iptvbd.live/metv1080/1080.m3u8",
             "https://owrcovcrpy.gpcdn.net/bpk-tv/1724/output/index.m3u8",
             "https://owrcovcrpy.gpcdn.net/bpk-tv/1721/output/index.m3u8",
             "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla-cinema/index.m3u8?token=8d1d02ae937643e45977489a0dfe3e850880d60e-881b199f91a23eac78f0712253898674-1772643396-1772639796",
+
             "https://cdn-3.pishow.tv/live/1253/master.m3u8",
             "https://app.ncare.live/c3VydmVyX8RpbEU9Mi8xNy8yMDE0GIDU6RgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcGVMZEJCTEFWeVN3PTOmdFsaWRtaW51aiPhnPTI2/greentv.stream/live-orgin/greentv.stream/chunks.m3u8",
             "https://edge2.roarzone.info:8447/roarzone/edge3/ananda-tv/index.m3u8?token=a6403934792cbef8c35c65344acb1c7c3b77889c-e513eb1cb3841006234f6db12cb4471b-1772643396-1772639796",
@@ -515,9 +578,16 @@
             "https://cdn-2.pishow.tv/live/228/228_1.m3u8",
             "https://cdn-2.pishow.tv/live/1461/master.m3u8",
             "https://server.zillarbarta.com/ZBCINEMA/tracks-v1a1/mono.ts.m3u8",
+
             "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01412-xiaomiasia-yrfmusic-xiaomi/playlist.m3u8",
+
+
             "https://rtatv.akamaized.net/Content/HLS/Live/channel(RTA3)/03.m3u8",
             "https://starsportshindiii.pages.dev/index.m3u8",
+
+
+
+
             "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network/index.m3u8?token=cdf4516b98f215df9d99eaa6cfa8935aebedd091-6c0e27da1f7b9839536653514a3576f5-1772643396-1772639796",
             "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network-hd/index.m3u8?token=b5012ab82068e2717b91d9ca6f5b8d496f786216-3e53f89a5429aff97637b8b825104219-1772643396-1772639796",
             "https://edge2.roarzone.info:8447/roarzone/edge3/pogo/index.m3u8?token=0813675d6643e7aa9b7af9b783733d3e5b4b702f-3ec020192f0e7e5de7ed41d81f7f88fc-1772643396-1772639796",
@@ -531,78 +601,70 @@
             "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8",
             "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
         ];
-        
-        let currentIndex = 0, hls = null, uiTimer;
-        const video = document.getElementById('mhrPlayer');
-        const controlBar = document.getElementById('controlBar');
-        const loader = document.getElementById('videoLoader');
+
+        let curIdx = 0,
+            hls = null,
+            uiTimer, chTimer;
+        const video = document.getElementById('player');
+        const hub = document.getElementById('hub');
+        const loader = document.getElementById('loader');
 
         window.onload = () => {
             setTimeout(() => {
-                document.getElementById('mhrBoot').style.display = 'none';
+                document.getElementById('boot').style.display = 'none';
                 tune(0);
-            }, 1500);
+            }, 1000);
         };
 
         function showUI() {
-            controlBar.classList.add('visible');
+            hub.classList.add('visible');
             clearTimeout(uiTimer);
-            uiTimer = setTimeout(() => controlBar.classList.remove('visible'), 4000);
+            uiTimer = setTimeout(() => hub.classList.remove('visible'), 3500);
         }
 
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
         }
 
-        function nextChannel() { tune((currentIndex + 1) % playlist.length); }
-        function prevChannel() { tune((currentIndex - 1 + playlist.length) % playlist.length); }
+        function next() {
+            tune((curIdx + 1) % playlist.length);
+        }
+
+        function prev() {
+            tune((curIdx - 1 + playlist.length) % playlist.length);
+        }
 
         function tune(i) {
-            currentIndex = i;
-            
-            // Show Loader and UI
-            loader.style.display = 'flex';
+            curIdx = i;
+            loader.style.display = "block";
             video.classList.remove('active-view');
             showUI();
 
-            // Channel Info Update
-            document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
+            document.getElementById('chNumber').innerText = (curIdx + 1).toString().padStart(2, '0');
             document.getElementById('chInfo').classList.add('show');
-            setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 2500);
+            clearTimeout(chTimer);
+            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 2000);
 
             if (hls) hls.destroy();
-
             if (Hls.isSupported()) {
                 hls = new Hls();
-                hls.loadSource(playlist[currentIndex]);
+                hls.loadSource(playlist[curIdx]);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play().catch(() => {});
-                });
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+                video.onwaiting = () => loader.style.display = "block";
+                video.onplaying = () => {
+                    loader.style.display = "none";
+                    video.classList.add('active-view');
+                };
             }
         }
 
-        // Hide loader when video actually starts playing
-        video.onplaying = () => {
-            loader.style.display = 'none';
-            video.classList.add('active-view');
-        };
-
-        // Show loader if video buffers
-        video.onwaiting = () => { loader.style.display = 'flex'; };
-
-        document.addEventListener('mousemove', showUI);
         document.addEventListener('touchstart', showUI);
-        document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 39) nextChannel();
-            if (e.keyCode === 37) prevChannel();
-        });
+        document.addEventListener('mousemove', showUI);
     </script>
 </body>
+
 </html>
 
 
